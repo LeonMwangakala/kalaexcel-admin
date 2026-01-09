@@ -23,7 +23,14 @@ export interface AuthResponse {
 }
 
 export const authService = {
+  async fetchCsrfCookie(): Promise<void> {
+    // Fetch CSRF cookie before making authenticated requests
+    await api.get('/csrf-cookie')
+  },
+
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    // Fetch CSRF cookie before login
+    await this.fetchCsrfCookie()
     const response = await api.post('/login', toSnakeCase(credentials))
     // Transform response from snake_case to camelCase
     const transformedUser = toCamelCase(response.data.user)
