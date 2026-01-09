@@ -25,7 +25,8 @@ export interface AuthResponse {
 export const authService = {
   async fetchCsrfCookie(): Promise<void> {
     // Fetch CSRF cookie before making authenticated requests
-    await api.get('/csrf-cookie')
+    // Use Sanctum's built-in endpoint which handles CORS properly
+    await api.get('/sanctum/csrf-cookie')
   },
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
