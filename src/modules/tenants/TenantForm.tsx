@@ -294,15 +294,6 @@ export default function TenantForm() {
             </FormField>
 
             <FormField label="Assign Properties" name="propertyIds" required error={errors.propertyIds?.message}>
-              {leasedProperties.length > 0 && (
-                <Alert variant="warning" className="mb-2" title={`${leasedProperties.length} propert${leasedProperties.length === 1 ? 'y is' : 'ies are'} currently leased:`}>
-                  <ul className="mt-1 list-disc list-inside">
-                    {leasedProperties.map(p => (
-                      <li key={p.id}>{p.name}</li>
-                    ))}
-                  </ul>
-                </Alert>
-              )}
               <Controller
                 name="propertyIds"
                 control={control}
