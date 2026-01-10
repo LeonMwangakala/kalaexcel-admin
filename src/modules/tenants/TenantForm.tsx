@@ -99,13 +99,24 @@ export default function TenantForm() {
           showConfirmButton: false,
         })
       } else {
-        await dispatch(createTenant(data)).unwrap()
+        const result = await dispatch(createTenant(data)).unwrap()
+        // Check if existing tenant was reused
+        const isExistingTenant = (result as any)._message?.includes('Existing tenant')
+        
         await Swal.fire({
           icon: 'success',
           title: 'Success!',
-          text: 'Tenant created successfully',
-          timer: 2000,
-          showConfirmButton: false,
+          text: isExistingTenant 
+            ? 'Existing tenant found and assigned to new properties successfully'
+            : 'Tenant created successfully',
+          html: isExistingTenant 
+            ? `<div>
+                <p>Existing tenant found and assigned to new properties successfully.</p>
+                <p class="text-sm text-gray-600 mt-2">The tenant "${result.name}" already exists and has been assigned to the selected properties.</p>
+              </div>`
+            : 'Tenant created successfully',
+          timer: isExistingTenant ? 4000 : 2000,
+          showConfirmButton: true,
         })
       }
       navigate('/tenants')

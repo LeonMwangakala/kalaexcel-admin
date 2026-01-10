@@ -52,13 +52,18 @@ export const tenantService = {
     return transformTenant(response.data)
   },
 
-  async create(data: Omit<Tenant, 'id'>): Promise<Tenant> {
+  async create(data: Omit<Tenant, 'id'>): Promise<Tenant & { _message?: string }> {
     const apiData: any = toSnakeCase(data)
     if (apiData.property_ids && Array.isArray(apiData.property_ids)) {
       apiData.property_ids = apiData.property_ids.map((id: string) => parseInt(id))
     }
     const response = await api.post<any>('/tenants', apiData)
-    return transformTenant(response.data)
+    const tenant = transformTenant(response.data)
+    // Include message if present (for existing tenant reuse case)
+    if (response.data._message) {
+      return { ...tenant, _message: response.data._message }
+    }
+    return tenant
   },
 
   async update(id: string, data: Partial<Tenant>): Promise<Tenant> {
