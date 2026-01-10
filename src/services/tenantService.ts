@@ -2,9 +2,9 @@ import api from './api'
 import { Tenant } from '../types'
 import { toCamelCase, toSnakeCase, transformId } from '../utils/transform'
 
-const transformTenant = (apiTenant: any): Tenant & { properties?: any[] } => {
+const transformTenant = (apiTenant: any): Tenant & { properties?: any[], _message?: string } => {
   const transformed = toCamelCase(apiTenant)
-  return {
+  const result: Tenant & { properties?: any[], _message?: string } = {
     ...transformed,
     id: transformId(transformed.id),
     propertyIds: transformed.properties 
@@ -22,6 +22,13 @@ const transformTenant = (apiTenant: any): Tenant & { properties?: any[] } => {
       }
     }) : undefined,
   }
+  
+  // Preserve _message field if present (for existing tenant reuse case)
+  if (transformed._message) {
+    result._message = transformed._message
+  }
+  
+  return result
 }
 
 interface PaginatedResponse<T> {
@@ -58,12 +65,8 @@ export const tenantService = {
       apiData.property_ids = apiData.property_ids.map((id: string) => parseInt(id))
     }
     const response = await api.post<any>('/tenants', apiData)
-    const tenant = transformTenant(response.data)
-    // Include message if present (for existing tenant reuse case)
-    if (response.data._message) {
-      return { ...tenant, _message: response.data._message }
-    }
-    return tenant
+    // transformTenant now preserves _message field
+    return transformTenant(response.data)
   },
 
   async update(id: string, data: Partial<Tenant>): Promise<Tenant> {
