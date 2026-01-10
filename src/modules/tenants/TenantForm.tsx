@@ -52,10 +52,12 @@ export default function TenantForm() {
 
 
   useEffect(() => {
-    dispatch(fetchProperties())
+    // Fetch all properties for dropdown (use large perPage to get all properties)
+    dispatch(fetchProperties({ page: 1, perPage: 1000 }))
     dispatch(fetchBusinessTypes())
     dispatch(fetchLocations())
-    dispatch(fetchContracts())
+    // Fetch all contracts to check for active leases (use large perPage to get all contracts)
+    dispatch(fetchContracts({ page: 1, perPage: 1000 }))
   }, [dispatch])
 
   useEffect(() => {

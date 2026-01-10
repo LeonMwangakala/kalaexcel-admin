@@ -84,8 +84,10 @@ export default function ContractForm() {
   }, [selectedTenantId, isEdit, setValue])
 
   useEffect(() => {
-    dispatch(fetchTenants())
-    dispatch(fetchProperties({ page: 1, perPage: 1000 })) // Fetch all properties for lookup
+    // Fetch all tenants for dropdown (use large perPage to get all tenants)
+    dispatch(fetchTenants({ page: 1, perPage: 1000 }))
+    // Fetch all properties for dropdown (use large perPage to get all properties)
+    dispatch(fetchProperties({ page: 1, perPage: 1000 }))
     dispatch(fetchLocations())
     // Don't fetch all contracts on mount - only fetch the specific one if editing
   }, [dispatch])
