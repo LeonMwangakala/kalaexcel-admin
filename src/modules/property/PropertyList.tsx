@@ -32,6 +32,18 @@ export default function PropertyList() {
     dispatch(fetchLocations())
   }, [dispatch, currentPage, itemsPerPage])
 
+  // Sync local state with Redux pagination state after API response
+  useEffect(() => {
+    if (pagination) {
+      if (pagination.currentPage !== currentPage) {
+        setCurrentPage(pagination.currentPage)
+      }
+      if (pagination.perPage !== itemsPerPage) {
+        setItemsPerPage(pagination.perPage)
+      }
+    }
+  }, [pagination?.currentPage, pagination?.perPage])
+
   const handleDelete = async (id: string) => {
     const property = properties.find(p => p.id === id)
     const result = await Swal.fire({
@@ -50,15 +62,39 @@ export default function PropertyList() {
     if (result.isConfirmed) {
       try {
         await dispatch(deleteProperty(id)).unwrap()
-        await Swal.fire({
+        
+        // Calculate page to fetch after deletion
+        const newTotal = (pagination?.total || 1) - 1
+        const itemsOnCurrentPage = properties.length
+        let pageToFetch = currentPage
+        
+        if (itemsOnCurrentPage === 1 && currentPage > 1) {
+          // If this was the last item on the page, go to previous page
+          pageToFetch = currentPage - 1
+          setCurrentPage(pageToFetch)
+        } else if (newTotal > 0) {
+          // Calculate the last page after deletion
+          const lastPageAfterDelete = Math.ceil(newTotal / itemsPerPage)
+          if (currentPage > lastPageAfterDelete) {
+            pageToFetch = Math.max(1, lastPageAfterDelete)
+            setCurrentPage(pageToFetch)
+          }
+        } else {
+          // No items left, go to page 1
+          pageToFetch = 1
+          setCurrentPage(1)
+        }
+        
+        // Refresh the list with updated page
+        dispatch(fetchProperties({ page: pageToFetch, perPage: itemsPerPage }))
+        
+        Swal.fire({
           icon: 'success',
           title: 'Deleted!',
           text: 'Property has been deleted successfully.',
           timer: 2000,
           showConfirmButton: false,
         })
-        // Refresh the list
-        dispatch(fetchProperties({ page: currentPage, perPage: itemsPerPage }))
       } catch (error: any) {
         Swal.fire({
           icon: 'error',

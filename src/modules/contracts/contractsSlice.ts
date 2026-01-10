@@ -99,12 +99,12 @@ const contractsSlice = createSlice({
         state.loading = false
         state.contracts = action.payload.data
         state.pagination = {
-          currentPage: action.payload.currentPage,
-          lastPage: action.payload.lastPage,
-          perPage: action.payload.perPage,
-          total: action.payload.total,
-          from: action.payload.from,
-          to: action.payload.to,
+          currentPage: Number(action.payload.currentPage) || 1,
+          lastPage: Number(action.payload.lastPage) || 1,
+          perPage: Number(action.payload.perPage) || 15,
+          total: Number(action.payload.total) || 0,
+          from: action.payload.from ? Number(action.payload.from) : null,
+          to: action.payload.to ? Number(action.payload.to) : null,
         }
       })
       .addCase(fetchContracts.rejected, (state, action) => {
@@ -128,6 +128,21 @@ const contractsSlice = createSlice({
       })
       .addCase(deleteContract.fulfilled, (state, action) => {
         state.contracts = state.contracts.filter(c => c.id !== action.payload)
+        // Update total count in pagination
+        if (state.pagination) {
+          state.pagination.total = Math.max(0, state.pagination.total - 1)
+          // Recalculate last page
+          if (state.pagination.total > 0 && state.pagination.perPage > 0) {
+            state.pagination.lastPage = Math.ceil(state.pagination.total / state.pagination.perPage)
+            // Adjust current page if it's beyond the last page
+            if (state.pagination.currentPage > state.pagination.lastPage) {
+              state.pagination.currentPage = Math.max(1, state.pagination.lastPage)
+            }
+          } else {
+            state.pagination.lastPage = 1
+            state.pagination.currentPage = 1
+          }
+        }
       })
       .addCase(deleteContract.rejected, (state, action) => {
         state.error = action.payload as string

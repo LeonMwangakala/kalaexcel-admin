@@ -28,9 +28,21 @@ export default function ContractList() {
   useEffect(() => {
     dispatch(fetchContracts({ page: currentPage, perPage: itemsPerPage }))
     // Tenant and property data are nested in contract response, but fetch for fallback
-    dispatch(fetchTenants({}))
+    dispatch(fetchTenants({ page: 1, perPage: 1000 }))
     dispatch(fetchProperties({ page: 1, perPage: 1000 }))
   }, [dispatch, currentPage, itemsPerPage])
+
+  // Sync local state with Redux pagination state after API response
+  useEffect(() => {
+    if (pagination) {
+      if (pagination.currentPage !== currentPage) {
+        setCurrentPage(pagination.currentPage)
+      }
+      if (pagination.perPage !== itemsPerPage) {
+        setItemsPerPage(pagination.perPage)
+      }
+    }
+  }, [pagination?.currentPage, pagination?.perPage])
 
   const getTenantName = (tenantId: string, contract?: any) => {
     // First try to get from contract's nested tenant object (from API)
@@ -78,15 +90,39 @@ export default function ContractList() {
     if (result.isConfirmed) {
       try {
         await dispatch(deleteContract(contractId)).unwrap()
-        await Swal.fire({
+        
+        // Calculate page to fetch after deletion
+        const newTotal = (pagination?.total || 1) - 1
+        const itemsOnCurrentPage = contracts.length
+        let pageToFetch = currentPage
+        
+        if (itemsOnCurrentPage === 1 && currentPage > 1) {
+          // If this was the last item on the page, go to previous page
+          pageToFetch = currentPage - 1
+          setCurrentPage(pageToFetch)
+        } else if (newTotal > 0) {
+          // Calculate the last page after deletion
+          const lastPageAfterDelete = Math.ceil(newTotal / itemsPerPage)
+          if (currentPage > lastPageAfterDelete) {
+            pageToFetch = Math.max(1, lastPageAfterDelete)
+            setCurrentPage(pageToFetch)
+          }
+        } else {
+          // No items left, go to page 1
+          pageToFetch = 1
+          setCurrentPage(1)
+        }
+        
+        // Refresh the contracts list with updated page
+        dispatch(fetchContracts({ page: pageToFetch, perPage: itemsPerPage }))
+        
+        Swal.fire({
           icon: 'success',
           title: 'Deleted!',
           text: 'Contract has been deleted successfully.',
           timer: 2000,
           showConfirmButton: false,
         })
-        // Refresh the contracts list
-        dispatch(fetchContracts({ page: currentPage, perPage: itemsPerPage }))
       } catch (error: any) {
         Swal.fire({
           icon: 'error',

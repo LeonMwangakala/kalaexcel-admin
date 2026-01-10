@@ -42,12 +42,12 @@ export const contractService = {
     const response = await api.get<any>('/contracts', { params })
     return {
       data: response.data.data.map(transformContract),
-      currentPage: Number(response.data.current_page),
-      lastPage: Number(response.data.last_page),
-      perPage: Number(response.data.per_page),
-      total: Number(response.data.total),
-      from: Number(response.data.from),
-      to: Number(response.data.to),
+      currentPage: Number(response.data.current_page) || 1,
+      lastPage: Number(response.data.last_page) || 1,
+      perPage: Number(response.data.per_page) || 15,
+      total: Number(response.data.total) || 0,
+      from: response.data.from ? Number(response.data.from) : null,
+      to: response.data.to ? Number(response.data.to) : null,
     }
   },
 

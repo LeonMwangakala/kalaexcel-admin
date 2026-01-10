@@ -129,9 +129,20 @@ const tenantsSlice = createSlice({
       })
       .addCase(deleteTenant.fulfilled, (state, action) => {
         state.tenants = state.tenants.filter(t => t.id !== action.payload)
-        // Update total count
+        // Update total count in pagination
         if (state.pagination) {
           state.pagination.total = Math.max(0, state.pagination.total - 1)
+          // Recalculate last page
+          if (state.pagination.total > 0 && state.pagination.perPage > 0) {
+            state.pagination.lastPage = Math.ceil(state.pagination.total / state.pagination.perPage)
+            // Adjust current page if it's beyond the last page
+            if (state.pagination.currentPage > state.pagination.lastPage) {
+              state.pagination.currentPage = Math.max(1, state.pagination.lastPage)
+            }
+          } else {
+            state.pagination.lastPage = 1
+            state.pagination.currentPage = 1
+          }
         }
       })
       .addCase(deleteTenant.rejected, (state, action) => {

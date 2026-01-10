@@ -70,10 +70,15 @@ export const propertyService = {
     if (search) {
       params.search = search
     }
-    const response = await api.get<PaginatedResponse<any>>('/properties', { params })
+    const response = await api.get<any>('/properties', { params })
     return {
-      ...response.data,
       data: response.data.data.map(transformProperty),
+      currentPage: Number(response.data.current_page) || 1,
+      lastPage: Number(response.data.last_page) || 1,
+      perPage: Number(response.data.per_page) || 15,
+      total: Number(response.data.total) || 0,
+      from: response.data.from ? Number(response.data.from) : null,
+      to: response.data.to ? Number(response.data.to) : null,
     }
   },
 
