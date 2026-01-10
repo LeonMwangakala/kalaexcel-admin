@@ -99,25 +99,33 @@ export default function TenantForm() {
           showConfirmButton: false,
         })
       } else {
-        const result = await dispatch(createTenant(data)).unwrap()
-        // Check if existing tenant was reused
-        const isExistingTenant = (result as any)._message?.includes('Existing tenant')
+        const result: any = await dispatch(createTenant(data)).unwrap()
+        // Check if existing tenant was reused (backend includes _message field)
+        const isExistingTenant = result._message?.includes('Existing tenant') || result._message?.includes('existing')
         
-        await Swal.fire({
-          icon: 'success',
-          title: 'Success!',
-          text: isExistingTenant 
-            ? 'Existing tenant found and assigned to new properties successfully'
-            : 'Tenant created successfully',
-          html: isExistingTenant 
-            ? `<div>
-                <p>Existing tenant found and assigned to new properties successfully.</p>
-                <p class="text-sm text-gray-600 mt-2">The tenant "${result.name}" already exists and has been assigned to the selected properties.</p>
-              </div>`
-            : 'Tenant created successfully',
-          timer: isExistingTenant ? 4000 : 2000,
-          showConfirmButton: true,
-        })
+        if (isExistingTenant) {
+          await Swal.fire({
+            icon: 'info',
+            title: 'Existing Tenant Found',
+            html: `
+              <div class="text-left">
+                <p class="mb-2">An existing tenant with the same phone number or ID was found.</p>
+                <p class="mb-2 font-semibold">Tenant: <span class="text-blue-600">${result.name || data.name}</span></p>
+                <p class="text-sm text-gray-600">The tenant has been successfully assigned to the new properties.</p>
+              </div>
+            `,
+            timer: 4000,
+            showConfirmButton: true,
+          })
+        } else {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'Tenant created successfully',
+            timer: 2000,
+            showConfirmButton: false,
+          })
+        }
       }
       navigate('/tenants')
     } catch (error: any) {
