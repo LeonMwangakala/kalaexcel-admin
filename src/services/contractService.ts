@@ -75,5 +75,16 @@ export const contractService = {
   async delete(id: string): Promise<void> {
     await api.delete(`/contracts/${id}`)
   },
+
+  async getStats(): Promise<{ total: number; active: number; expired: number; terminated: number; totalMonthlyRent: number }> {
+    const response = await api.get<any>('/contracts/stats')
+    return {
+      total: Number(response.data.total) || 0,
+      active: Number(response.data.active) || 0,
+      expired: Number(response.data.expired) || 0,
+      terminated: Number(response.data.terminated) || 0,
+      totalMonthlyRent: Number(response.data.totalMonthlyRent) || 0,
+    }
+  },
 }
 

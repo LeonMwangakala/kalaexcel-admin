@@ -86,5 +86,15 @@ export const tenantService = {
   async delete(id: string): Promise<void> {
     await api.delete(`/tenants/${id}`)
   },
+
+  async getStats(): Promise<{ total: number; active: number; pendingPayment: number; ended: number }> {
+    const response = await api.get<any>('/tenants/stats')
+    return {
+      total: Number(response.data.total) || 0,
+      active: Number(response.data.active) || 0,
+      pendingPayment: Number(response.data.pendingPayment) || 0,
+      ended: Number(response.data.ended) || 0,
+    }
+  },
 }
 

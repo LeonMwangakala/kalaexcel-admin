@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { RootState, AppDispatch } from '../../store'
-import { deleteContract, fetchContracts } from './contractsSlice'
+import { deleteContract, fetchContracts, fetchContractStats } from './contractsSlice'
 import { fetchTenants } from '../tenants/tenantsSlice'
 import { fetchProperties } from '../property/propertySlice'
 import { Card } from '../../components/common/Card'
@@ -15,7 +15,7 @@ import Swal from 'sweetalert2'
 
 export default function ContractList() {
   const dispatch = useDispatch<AppDispatch>()
-  const { contracts, pagination, loading } = useSelector((state: RootState) => state.contracts)
+  const { contracts, pagination, stats, loading } = useSelector((state: RootState) => state.contracts)
   const tenants = useSelector((state: RootState) => state.tenants.tenants)
   const properties = useSelector((state: RootState) => state.properties.properties)
   const { user } = useSelector((state: RootState) => state.auth)
@@ -27,7 +27,8 @@ export default function ContractList() {
 
   useEffect(() => {
     dispatch(fetchContracts({ page: currentPage, perPage: itemsPerPage }))
-    // Tenant and property data are nested in contract response, but fetch for fallback
+    dispatch(fetchContractStats()) // Fetch summary stats from backend
+    // Tenant and property data are nested in contract response, but fetch for fallback (for dropdowns/lookups only)
     dispatch(fetchTenants({ page: 1, perPage: 1000 }))
     dispatch(fetchProperties({ page: 1, perPage: 1000 }))
   }, [dispatch, currentPage, itemsPerPage])
@@ -113,8 +114,9 @@ export default function ContractList() {
           setCurrentPage(1)
         }
         
-        // Refresh the contracts list with updated page
+        // Refresh the contracts list with updated page and stats
         dispatch(fetchContracts({ page: pageToFetch, perPage: itemsPerPage }))
+        dispatch(fetchContractStats())
         
         Swal.fire({
           icon: 'success',
@@ -212,20 +214,6 @@ export default function ContractList() {
     },
   ]
 
-  const activeContracts = contracts.filter(c => c.status === 'active').length
-  const expiredContracts = contracts.filter(c => c.status === 'expired').length
-  const totalRentValue = contracts.reduce((sum, c) => {
-    // Ensure rentAmount is converted to a number
-    let amount = 0
-    if (typeof c.rentAmount === 'number') {
-      amount = c.rentAmount
-    } else {
-      const rentAmountStr = String(c.rentAmount || '0')
-      amount = parseFloat(rentAmountStr.replace(/[^0-9.-]/g, '')) || 0
-    }
-    return sum + amount
-  }, 0)
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -245,25 +233,25 @@ export default function ContractList() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">{pagination?.total || 0}</p>
+            <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
             <p className="text-sm text-gray-600">Total Contracts</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-success-600">{activeContracts}</p>
+            <p className="text-2xl font-bold text-success-600">{stats?.active || 0}</p>
             <p className="text-sm text-gray-600">Active</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-500">{expiredContracts}</p>
+            <p className="text-2xl font-bold text-gray-500">{stats?.expired || 0}</p>
             <p className="text-sm text-gray-600">Expired</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-primary-600">TZS {Number(totalRentValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-2xl font-bold text-primary-600">TZS {Number(stats?.totalMonthlyRent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             <p className="text-sm text-gray-600">Total Monthly Value</p>
           </div>
         </Card>

@@ -9,13 +9,13 @@ import { Pagination } from '../../components/common/Pagination'
 import { Button } from '../../components/common/Button'
 import { Users, Edit, Trash2, Plus } from 'lucide-react'
 import { format } from 'date-fns'
-import { fetchTenants, deleteTenant } from './tenantsSlice'
+import { fetchTenants, deleteTenant, fetchTenantStats } from './tenantsSlice'
 import { fetchProperties } from '../property/propertySlice'
 import { fetchContracts } from '../contracts/contractsSlice'
 
 export default function TenantList() {
   const dispatch = useDispatch<AppDispatch>()
-  const { tenants, pagination, loading } = useSelector((state: RootState) => state.tenants)
+  const { tenants, pagination, stats, loading } = useSelector((state: RootState) => state.tenants)
   const { properties } = useSelector((state: RootState) => state.properties)
   const { contracts } = useSelector((state: RootState) => state.contracts)
   const { user } = useSelector((state: RootState) => state.auth)
@@ -27,9 +27,10 @@ export default function TenantList() {
 
   useEffect(() => {
     dispatch(fetchTenants({ page: currentPage, perPage: itemsPerPage }))
-    // Properties are nested in tenant response, but fetch for fallback
+    dispatch(fetchTenantStats()) // Fetch summary stats from backend
+    // Properties are nested in tenant response, but fetch for fallback (for dropdowns/lookups only)
     dispatch(fetchProperties({ page: 1, perPage: 1000 }))
-    // Fetch contracts to get active contract end dates
+    // Fetch contracts to get active contract end dates (for lookups only)
     dispatch(fetchContracts({ page: 1, perPage: 1000 }))
   }, [dispatch, currentPage, itemsPerPage])
 
@@ -86,8 +87,9 @@ export default function TenantList() {
           setCurrentPage(1)
         }
         
-        // Refresh the list with updated page
+        // Refresh the list with updated page and stats
         dispatch(fetchTenants({ page: pageToFetch, perPage: itemsPerPage }))
+        dispatch(fetchTenantStats())
         
         Swal.fire({
           icon: 'success',
@@ -212,9 +214,6 @@ export default function TenantList() {
     },
   ]
 
-  const activeTenants = tenants.filter(t => t.status === 'active').length
-  const pendingPaymentTenants = tenants.filter(t => t.status === 'pending_payment').length
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -234,19 +233,19 @@ export default function TenantList() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">{pagination?.total || tenants.length}</p>
+            <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
             <p className="text-sm text-gray-600">Total Tenants</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-success-600">{activeTenants}</p>
+            <p className="text-2xl font-bold text-success-600">{stats?.active || 0}</p>
             <p className="text-sm text-gray-600">Active</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-warning-600">{pendingPaymentTenants}</p>
+            <p className="text-2xl font-bold text-warning-600">{stats?.pendingPayment || 0}</p>
             <p className="text-sm text-gray-600">Pending Payment</p>
           </div>
         </Card>

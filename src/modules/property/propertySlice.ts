@@ -14,6 +14,7 @@ interface PaginationMeta {
 interface PropertiesState {
   properties: Property[]
   pagination: PaginationMeta | null
+  stats: { total: number; occupied: number; available: number } | null
   loading: boolean
   error: string | null
 }
@@ -21,6 +22,7 @@ interface PropertiesState {
 const initialState: PropertiesState = {
   properties: [],
   pagination: null,
+  stats: null,
   loading: false,
   error: null,
 }
@@ -96,6 +98,19 @@ export const deleteProperty = createAsyncThunk(
   }
 )
 
+export const fetchPropertyStats = createAsyncThunk(
+  'properties/fetchStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await propertyService.getStats()
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch property statistics'
+      )
+    }
+  }
+)
+
 const propertiesSlice = createSlice({
   name: 'properties',
   initialState,
@@ -165,6 +180,13 @@ const propertiesSlice = createSlice({
         }
       })
       .addCase(deleteProperty.rejected, (state, action) => {
+        state.error = action.payload as string
+      })
+      // Stats
+      .addCase(fetchPropertyStats.fulfilled, (state, action) => {
+        state.stats = action.payload
+      })
+      .addCase(fetchPropertyStats.rejected, (state, action) => {
         state.error = action.payload as string
       })
   },

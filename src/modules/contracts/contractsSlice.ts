@@ -14,6 +14,7 @@ interface PaginationMeta {
 interface ContractsState {
   contracts: Contract[]
   pagination: PaginationMeta | null
+  stats: { total: number; active: number; expired: number; terminated: number; totalMonthlyRent: number } | null
   loading: boolean
   error: string | null
 }
@@ -21,6 +22,7 @@ interface ContractsState {
 const initialState: ContractsState = {
   contracts: [],
   pagination: null,
+  stats: null,
   loading: false,
   error: null,
 }
@@ -77,6 +79,19 @@ export const deleteContract = createAsyncThunk(
       return id
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete contract')
+    }
+  }
+)
+
+export const fetchContractStats = createAsyncThunk(
+  'contracts/fetchStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await contractService.getStats()
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch contract statistics'
+      )
     }
   }
 )
@@ -163,6 +178,13 @@ const contractsSlice = createSlice({
       })
       .addCase(fetchContractById.rejected, (state, action) => {
         state.loading = false
+        state.error = action.payload as string
+      })
+      // Stats
+      .addCase(fetchContractStats.fulfilled, (state, action) => {
+        state.stats = action.payload
+      })
+      .addCase(fetchContractStats.rejected, (state, action) => {
         state.error = action.payload as string
       })
   },

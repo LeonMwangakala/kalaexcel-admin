@@ -107,5 +107,14 @@ export const propertyService = {
     const response = await api.get<any[]>('/properties/available/list')
     return response.data.map(transformProperty)
   },
+
+  async getStats(): Promise<{ total: number; occupied: number; available: number }> {
+    const response = await api.get<any>('/properties/stats')
+    return {
+      total: Number(response.data.total) || 0,
+      occupied: Number(response.data.occupied) || 0,
+      available: Number(response.data.available) || 0,
+    }
+  },
 }
 

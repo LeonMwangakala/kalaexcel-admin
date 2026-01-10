@@ -9,12 +9,12 @@ import { Pagination } from '../../components/common/Pagination'
 import { Button } from '../../components/common/Button'
 import { Building2, Edit, Trash2, Plus } from 'lucide-react'
 import { format } from 'date-fns'
-import { fetchProperties, deleteProperty } from './propertySlice'
+import { fetchProperties, deleteProperty, fetchPropertyStats } from './propertySlice'
 import { fetchPropertyTypes, fetchLocations } from '../settings/settingsSlice'
 
 export default function PropertyList() {
   const dispatch = useDispatch<AppDispatch>()
-  const { properties, pagination, loading, error } = useSelector((state: RootState) => state.properties)
+  const { properties, pagination, stats, loading, error } = useSelector((state: RootState) => state.properties)
   const { user } = useSelector((state: RootState) => state.auth)
   const tenants = useSelector((state: RootState) => state.tenants.tenants)
   const propertyTypes = useSelector((state: RootState) => state.settings.propertyTypes)
@@ -27,6 +27,7 @@ export default function PropertyList() {
 
   useEffect(() => {
     dispatch(fetchProperties({ page: currentPage, perPage: itemsPerPage }))
+    dispatch(fetchPropertyStats()) // Fetch summary stats from backend
     // Property type, location, and tenant data are nested in property response, but fetch for fallback
     dispatch(fetchPropertyTypes())
     dispatch(fetchLocations())
@@ -85,8 +86,9 @@ export default function PropertyList() {
           setCurrentPage(1)
         }
         
-        // Refresh the list with updated page
+        // Refresh the list with updated page and stats
         dispatch(fetchProperties({ page: pageToFetch, perPage: itemsPerPage }))
+        dispatch(fetchPropertyStats())
         
         Swal.fire({
           icon: 'success',
@@ -251,23 +253,19 @@ export default function PropertyList() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">{properties.length}</p>
+            <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
             <p className="text-sm text-gray-600">Total Properties</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-success-600">
-              {properties.filter(p => p.status === 'occupied').length}
-            </p>
+            <p className="text-2xl font-bold text-success-600">{stats?.occupied || 0}</p>
             <p className="text-sm text-gray-600">Occupied</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-500">
-              {properties.filter(p => p.status === 'available').length}
-            </p>
+            <p className="text-2xl font-bold text-gray-500">{stats?.available || 0}</p>
             <p className="text-sm text-gray-600">Available</p>
           </div>
         </Card>
